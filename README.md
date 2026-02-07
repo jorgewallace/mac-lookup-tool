@@ -23,6 +23,7 @@ Run the installer with root privileges to set up the environment and binary:
 
 ```bash
 # Clone the repository and run the installer
+git clone https://github.com/jorgewallace/mac-lookup-tool.git
 cd mac-lookup-tool
 chmod +x install.sh
 sudo ./install.sh
