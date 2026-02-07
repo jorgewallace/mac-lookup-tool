@@ -58,7 +58,7 @@ def get_vendor(mac):
 def main():
     parser = argparse.ArgumentParser(description="MAC Address Vendor Lookup Utility")
     parser.add_argument("macs", nargs="*", help="MAC addresses separated by spaces")
-    parser.add_argument("-f", "--file", help="Input file (TXT or CSV)")
+    parser.add_argument("-f", "--file", help="Input file (TXT)")
     parser.add_argument("-u", "--update", action="store_true", help="Update OUI database")
     
     args = parser.parse_args()
@@ -71,15 +71,24 @@ def main():
     inputs = args.macs
     if args.file and os.path.exists(args.file):
         with open(args.file) as f:
-            inputs += re.findall(r'(?:[0-9a-fA-F]:?){12}', f.read())
+            content = f.read()
+            regex = r'([0-9a-fA-F]{2,4}[:.-]?){2,6}[0-9a-fA-F]{2,4}|[0-9a-fA-F]{8,12}'
+            matches = re.finditer(regex, content)
+            inputs += [m.group(0) for m in matches]
 
     if not inputs:
         parser.print_help()
         return
+    seen = set()
+    unique_inputs = [x for x in inputs if not (x in seen or seen.add(x))]
 
-    data = [{"MAC": m, "VENDOR": get_vendor(m)} for m in inputs]
+    data = []
+    for m in unique_inputs:
+        clean_len = len("".join(re.findall(r'[0-9A-Fa-f]', m)))
+        if clean_len >= 8:
+            data.append({"MAC": m, "VENDOR": get_vendor(m)})
 
-    table = Table(title="MAC Lookup Results", border_style="blue")
+    table = Table(title="MAC Lookup Results", border_style="blue", show_lines=True)
     table.add_column("MAC Address", style="cyan")
     table.add_column("Vendor", style="green")
     
@@ -98,5 +107,4 @@ echo -e "\n${COLOR_GREEN}Installation completed successfully.${COLOR_RESET}"
 echo -e "Usage: ${COLOR_BLUE}$APP_NAME 00:11:22:33:44:55 or ${COLOR_RESET}"
 echo -e "Usage: ${COLOR_BLUE}$APP_NAME 00:11:22:33:44:55 00:11:22:33:44:5 or ${COLOR_RESET}"
 echo -e "Usage: ${COLOR_BLUE}$APP_NAME --file mac.txt or ${COLOR_RESET}"
-echo -e "Usage: ${COLOR_BLUE}$APP_NAME --file mac.csv or ${COLOR_RESET}"
 echo -e "Usage: ${COLOR_BLUE}$APP_NAME --update${COLOR_RESET}"
